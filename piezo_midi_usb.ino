@@ -14,16 +14,18 @@ int last_val[NUM_SENSORS];
 
 //Minimum and maximum values that could be passed into the note mapping function.
 //Note that you may need to adjust these to match real-world values
-#define VAL_MIN (1)
-#define VAL_MAX (1024)
+#define ANALOG_IN_MIN (1)
+#define ANALOG_IN_MAX (1024)
+#define VELOCITY_MIN (1)
+#define VELOCITY_MAX (100)
 
 #define DEFAULT_PITCH (pitchC3)
 byte pitches[NUM_SENSORS];
 byte velocities[NUM_SENSORS];
 const byte midi_channels[NUM_SENSORS] = {0}; //MIDI channel to output on per sensor
 
-#define NUM_NOTES (12)
-const byte note_pitches[NUM_NOTES] = {pitchC3, pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4};
+//The note each sensor will trigger
+const byte sensor_notes[NUM_SENSORS] = {pitchC3};//, pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4}; //C major scale
 
 void setup() {
   //Initialize the default values
@@ -33,7 +35,6 @@ void setup() {
     last_val[sensor_num] = -1;
     note_on_time[sensor_num] = 0;
     is_playing[sensor_num] = false;
-    velocities[sensor_num] = 100;
   }
 
 }
@@ -44,10 +45,9 @@ int read_value(int sensor_num) {
   return val;
 }
 
-byte get_pitch_from_val(int val) {
-  //Map the value to the range of notes available to play
-  int note_index = map(val, VAL_MIN, VAL_MAX, 0, NUM_NOTES-1);
-  return note_pitches[note_index];
+byte get_velocity_from_val(int val) {
+  //Map the value to the range of velocities available
+  return map(val, ANALOG_IN_MIN, ANALOG_IN_MAX, VELOCITY_MIN, VELOCITY_MAX);
 }
 
 void MIDINoteOn(byte channel, byte pitch, byte velocity) {
@@ -90,7 +90,8 @@ void loop() {
     //There are different ways of determining whether to play something, so if this is behaving weirdly, look into using another approach.
     int value_diff = abs(last_val[sensor_num] - curr_val[sensor_num]);    
     if (value_diff > sensor_thresholds[sensor_num]) {
-      pitches[sensor_num] = get_pitch_from_val(value_diff);
+      pitches[sensor_num] = sensor_notes[sensor_num];
+      velocities[sensor_num] = get_velocity_from_val(value_diff);
       MIDINoteOn(midi_channels[sensor_num],
                  pitches[sensor_num],
                  velocities[sensor_num]);
