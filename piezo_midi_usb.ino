@@ -1,7 +1,7 @@
 #include "MIDIUSB.h"
 #include "PitchToNote.h"
 
-#define ENABLE_SERIAL_OUTPUT (1) //Uncomment this entire line to write debug info to serial
+//#define ENABLE_SERIAL_OUTPUT (1) //Uncomment this entire line to write debug info to serial
 //#define DISABLE_MIDI_OUTPUT (1) //Uncomment this entire line to disable MIDI output (useful in debugging)
 
 #define NUM_SENSORS (1)
@@ -9,7 +9,7 @@ const byte sensor_pins[NUM_SENSORS] = {A1};
 const int sensor_thresholds[NUM_SENSORS] = {20};
 bool is_playing[NUM_SENSORS]; //This gets set to true while a note is playing
 unsigned long note_on_time[NUM_SENSORS];
-int note_duration_ms[NUM_SENSORS] = {200}; //When a note is triggered, how long should it play for (in ms)
+//int note_duration_ms[NUM_SENSORS] = {200}; //When a note is triggered, how long should it play for (in ms)
 int curr_val[NUM_SENSORS];
 int last_val[NUM_SENSORS];
 
@@ -19,7 +19,7 @@ int last_val[NUM_SENSORS];
 //Note that you may need to adjust these to match real-world values
 #define ANALOG_IN_MIN (1)
 #define ANALOG_IN_MAX (1024)
-#define VELOCITY_MIN (1)
+#define VELOCITY_MIN (25)
 #define VELOCITY_MAX (100)
 
 #define DEFAULT_PITCH (pitchC3)
@@ -88,7 +88,13 @@ void loop() {
 #endif
     if (is_playing[sensor_num]) {
       //If a note is playing currently, and there's still time left to play, do nothing for now
-      if ((curr_time - note_on_time[sensor_num]) < note_duration_ms[NUM_SENSORS]) {
+      //if ((curr_time - note_on_time[sensor_num]) < note_duration_ms[NUM_SENSORS]) {
+      if ((curr_time - note_on_time[sensor_num]) < 200) {
+#ifdef ENABLE_SERIAL_OUTPUT
+        Serial.print("---- Curr time: "); Serial.println(curr_time);
+        Serial.print("---- Note on time: "); Serial.println(note_on_time[sensor_num]);
+        //Serial.print("---- Note duration: "); Serial.println(note_duration_ms[NUM_SENSORS]);
+#endif
         continue;
       }
 
@@ -97,25 +103,28 @@ void loop() {
                   pitches[sensor_num],
                   velocities[sensor_num]);
       is_playing[sensor_num] = false;
-    }
-    //Get here if this sensor is not playing anything.
-
-    //If the difference between two consecutive reads breaches the threshold, play a note.
-    //There are different ways of determining whether to play something, so if this is behaving weirdly, look into using another approach.
-    int value_diff = abs(last_val[sensor_num] - curr_val[sensor_num]);    
 #ifdef ENABLE_SERIAL_OUTPUT
-    Serial.print("---- Value diff from last read: "); Serial.println(value_diff);
+    Serial.println("----Note on time elapsed. Note off.");
 #endif
-    if (value_diff > sensor_thresholds[sensor_num]) {
-      pitches[sensor_num] = sensor_notes[sensor_num];
-      velocities[sensor_num] = get_velocity_from_val(value_diff);
+    } else {
+      //If the difference between two consecutive reads breaches the threshold, play a note.
+      //There are different ways of determining whether to play something, so if this is behaving weirdly, look into using another approach.
+      int value_diff = abs(last_val[sensor_num] - curr_val[sensor_num]);    
 #ifdef ENABLE_SERIAL_OUTPUT
-      Serial.print("---- Threshold breached. Playing pitch: "); Serial.print(pitches[sensor_num]); Serial.print(", velocity: "); Serial.println(velocities[sensor_num]);
+      Serial.print("---- Value diff from last read: "); Serial.println(value_diff);
 #endif
-      MIDINoteOn(midi_channels[sensor_num],
-                 pitches[sensor_num],
-                 velocities[sensor_num]);
-      is_playing[sensor_num] = true;
+      if (value_diff > sensor_thresholds[sensor_num]) {
+        pitches[sensor_num] = sensor_notes[sensor_num];
+        velocities[sensor_num] = get_velocity_from_val(value_diff);
+#ifdef ENABLE_SERIAL_OUTPUT
+        Serial.print("---- Threshold breached. Playing pitch: "); Serial.print(pitches[sensor_num]); Serial.print(", velocity: "); Serial.println(velocities[sensor_num]);
+#endif
+        MIDINoteOn(midi_channels[sensor_num],
+                   pitches[sensor_num],
+                   velocities[sensor_num]);
+        note_on_time[sensor_num] = curr_time;
+        is_playing[sensor_num] = true;
+      }
     } 
   }
   delay(LOOP_SLEEP_MS);
