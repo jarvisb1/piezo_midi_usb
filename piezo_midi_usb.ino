@@ -4,31 +4,37 @@
 //#define ENABLE_SERIAL_OUTPUT (1) //Uncomment this entire line to write debug info to serial
 //#define DISABLE_MIDI_OUTPUT (1) //Uncomment this entire line to disable MIDI output (useful in debugging)
 
-#define NUM_SENSORS (1)
-const byte sensor_pins[NUM_SENSORS] = {A1};
-const int sensor_thresholds[NUM_SENSORS] = {20};
-bool is_playing[NUM_SENSORS]; //This gets set to true while a note is playing
-unsigned long note_on_time[NUM_SENSORS];
-//int note_duration_ms[NUM_SENSORS] = {200}; //When a note is triggered, how long should it play for (in ms)
-int curr_val[NUM_SENSORS];
-int last_val[NUM_SENSORS];
+///////////////////
+// CONFIGURATION //
+///////////////////
+#define NUM_SENSORS (1)                           // Specify the number of sensors here. If you change this, you need to make sure the lists below have a value for every sensor (see examples in each comment)
+const byte sensor_pins[NUM_SENSORS] = {A1};       // Specify a list of pins that the sensors are on, for example if you're using A0, A2, and A5: {A0, A2, A5};
+const int sensor_thresholds[NUM_SENSORS] = {20};  // Specify a list of thresholds that each sensor will use to determine when it's been tapped, for example if you want 50 for the 2nd sensor but 20 for the others: {20, 50, 20};
+const byte midi_channels[NUM_SENSORS] = {0};      // Specify a list of MIDI channel that each sensor will output to. For example if you want the first two to output to channel 0 and the 3rd to output to channel 1: {0, 0, 1};
+const byte sensor_notes[NUM_SENSORS] = {pitchC3}; // Specify a list of pitches that each sensor should play. For example if you want the first sensor to play C3 and the 2nd and 3rd sensors to play G4: {pitchC4, pitchG4, pitchG4};
+//Additionall pitch examples for convenience: pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4}; //C major scale
+
+// To change the duration that each note is played, search for "To play notes for a different duration" in the code below and change the value in the comparison statement.
 
 #define LOOP_SLEEP_MS (100) // Milliseconds to sleep/delay at the end of each loop iteration.
 
 //Minimum and maximum values that could be passed into the note mapping function.
 //Note that you may need to adjust these to match real-world values
+#define VELOCITY_MIN (25) // The lowest possible velocity. Adjust this higher if light taps are not playing loud enough.
+#define VELOCITY_MAX (100) // The highest possible velocity. You probably don't want to change this unless things are playing too strong.
+//////////////////////////
+// END OF CONFIGURATION //
+//////////////////////////
+
 #define ANALOG_IN_MIN (1)
 #define ANALOG_IN_MAX (1024)
-#define VELOCITY_MIN (25)
-#define VELOCITY_MAX (100)
-
 #define DEFAULT_PITCH (pitchC3)
+bool is_playing[NUM_SENSORS]; //This gets set to true while a note is playing
+unsigned long note_on_time[NUM_SENSORS];
+int curr_val[NUM_SENSORS];
+int last_val[NUM_SENSORS];
 byte pitches[NUM_SENSORS];
 byte velocities[NUM_SENSORS];
-const byte midi_channels[NUM_SENSORS] = {0}; //MIDI channel to output on per sensor
-
-//The note each sensor will trigger
-const byte sensor_notes[NUM_SENSORS] = {pitchC3};//, pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4}; //C major scale
 
 void setup() {
 #ifdef ENABLE_SERIAL_OUTPUT
@@ -88,12 +94,12 @@ void loop() {
 #endif
     if (is_playing[sensor_num]) {
       //If a note is playing currently, and there's still time left to play, do nothing for now
-      //if ((curr_time - note_on_time[sensor_num]) < note_duration_ms[NUM_SENSORS]) {
+      //To play notes for a different duration, change the value on the right side of the "less than" below.
+      //For some reason using a variable for that value was causing problems so that's why it's hard-coded like that. TODO: Figure out why that is.
       if ((curr_time - note_on_time[sensor_num]) < 200) {
 #ifdef ENABLE_SERIAL_OUTPUT
         Serial.print("---- Curr time: "); Serial.println(curr_time);
         Serial.print("---- Note on time: "); Serial.println(note_on_time[sensor_num]);
-        //Serial.print("---- Note duration: "); Serial.println(note_duration_ms[NUM_SENSORS]);
 #endif
         continue;
       }
