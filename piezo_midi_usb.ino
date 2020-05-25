@@ -10,7 +10,7 @@
 //NOTE: This expects the sensors to be wired up like the knock sensor in https://www.arduino.cc/en/Tutorial/Knock
 #define NUM_SENSORS (1)                           // Specify the number of sensors here. If you change this, you need to make sure the lists below have a value for every sensor (see examples in each comment)
 const byte sensor_pins[NUM_SENSORS] = {A0};       // Specify a list of pins that the sensors are on, for example if you're using A0, A2, and A5: {A0, A2, A5};
-const int sensor_thresholds[NUM_SENSORS] = {150}; // Specify a list of thresholds that each sensor will use to determine when it's been tapped, for example if you want 50 for the 2nd sensor but 20 for the others: {20, 50, 20};
+const int sensor_thresholds[NUM_SENSORS] = {45}; // Specify a list of thresholds that each sensor will use to determine when it's been tapped, for example if you want 50 for the 2nd sensor but 20 for the others: {20, 50, 20};
 const byte midi_channels[NUM_SENSORS] = {0};      // Specify a list of MIDI channel that each sensor will output to. For example if you want the first two to output to channel 0 and the 3rd to output to channel 1: {0, 0, 1};
 const byte sensor_notes[NUM_SENSORS] = {pitchC3}; // Specify a list of pitches that each sensor should play. For example if you want the first sensor to play C3 and the 2nd and 3rd sensors to play G4: {pitchC4, pitchG4, pitchG4};
 //Additionall pitch examples for convenience: pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4}; //C major scale
