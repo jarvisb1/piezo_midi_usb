@@ -7,9 +7,10 @@
 ///////////////////
 // CONFIGURATION //
 ///////////////////
+//NOTE: This expects the sensors to be wired up like the knock sensor in https://www.arduino.cc/en/Tutorial/Knock
 #define NUM_SENSORS (1)                           // Specify the number of sensors here. If you change this, you need to make sure the lists below have a value for every sensor (see examples in each comment)
-const byte sensor_pins[NUM_SENSORS] = {A1};       // Specify a list of pins that the sensors are on, for example if you're using A0, A2, and A5: {A0, A2, A5};
-const int sensor_thresholds[NUM_SENSORS] = {20};  // Specify a list of thresholds that each sensor will use to determine when it's been tapped, for example if you want 50 for the 2nd sensor but 20 for the others: {20, 50, 20};
+const byte sensor_pins[NUM_SENSORS] = {A0};       // Specify a list of pins that the sensors are on, for example if you're using A0, A2, and A5: {A0, A2, A5};
+const int sensor_thresholds[NUM_SENSORS] = {150}; // Specify a list of thresholds that each sensor will use to determine when it's been tapped, for example if you want 50 for the 2nd sensor but 20 for the others: {20, 50, 20};
 const byte midi_channels[NUM_SENSORS] = {0};      // Specify a list of MIDI channel that each sensor will output to. For example if you want the first two to output to channel 0 and the 3rd to output to channel 1: {0, 0, 1};
 const byte sensor_notes[NUM_SENSORS] = {pitchC3}; // Specify a list of pitches that each sensor should play. For example if you want the first sensor to play C3 and the 2nd and 3rd sensors to play G4: {pitchC4, pitchG4, pitchG4};
 //Additionall pitch examples for convenience: pitchD3, pitchE3, pitchF3, pitchG3, pitchA3, pitchB3, pitchC4, pitchD4, pitchE4, pitchF4, pitchG4}; //C major scale
@@ -27,7 +28,7 @@ const byte sensor_notes[NUM_SENSORS] = {pitchC3}; // Specify a list of pitches t
 //////////////////////////
 
 #define ANALOG_IN_MIN (1)
-#define ANALOG_IN_MAX (1024)
+#define ANALOG_IN_MAX (250) //The ADC can go up to 1024. But looking at the values, it never really goes higher than appx. 250.
 #define DEFAULT_PITCH (pitchC3)
 bool is_playing[NUM_SENSORS]; //This gets set to true while a note is playing
 unsigned long note_on_time[NUM_SENSORS];
@@ -113,15 +114,12 @@ void loop() {
     Serial.println("----Note on time elapsed. Note off.");
 #endif
     } else {
-      //If the difference between two consecutive reads breaches the threshold, play a note.
-      //There are different ways of determining whether to play something, so if this is behaving weirdly, look into using another approach.
-      int value_diff = abs(last_val[sensor_num] - curr_val[sensor_num]);    
 #ifdef ENABLE_SERIAL_OUTPUT
-      Serial.print("---- Value diff from last read: "); Serial.println(value_diff);
+      Serial.print("---- Value read: "); Serial.println(curr_val[sensor_num]);
 #endif
-      if (value_diff > sensor_thresholds[sensor_num]) {
+      if (curr_val[sensor_num] > sensor_thresholds[sensor_num]) {
         pitches[sensor_num] = sensor_notes[sensor_num];
-        velocities[sensor_num] = get_velocity_from_val(value_diff);
+        velocities[sensor_num] = get_velocity_from_val(curr_val[sensor_num]);
 #ifdef ENABLE_SERIAL_OUTPUT
         Serial.print("---- Threshold breached. Playing pitch: "); Serial.print(pitches[sensor_num]); Serial.print(", velocity: "); Serial.println(velocities[sensor_num]);
 #endif
